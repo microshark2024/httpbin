@@ -34,15 +34,7 @@ setup(
     test_suite="test_httpbin",
     packages=find_packages(),
     include_package_data = True, # include files listed in MANIFEST.in
-    install_requires=[
-        'Flask==2.0.3', 
-        'MarkupSafe==2.0.1', 
-        'decorator', 
-        'itsdangerous==2.0.1', 
-        'six', 
-        'brotlipy',
-        'raven[flask]', 
-        'werkzeug==2.0.3', 
-        'flasgger'
+    install_requires=['Flask', 'MarkupSafe', 'decorator', 'itsdangerous', 'six', 'brotlipy',
+        'raven[flask]', 'werkzeug=2.0.3', 'flasgger'
     ],
 )
