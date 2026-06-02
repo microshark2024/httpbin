@@ -1,22 +1,27 @@
-FROM ubuntu:18.04
+# 1. 放弃沉重的 Ubuntu 18.04，换用轻量且现代的 Python 官方镜像（自带 pip）
+FROM python:3.9-slim
 
-LABEL name="httpbin"
-LABEL version="0.9.2"
-LABEL description="A simple HTTP service."
-LABEL org.kennethreitz.vendor="Kenneth Reitz"
-
+# 2. 设置系统编码
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-RUN apt update -y && apt install python3-pip git -y && pip3 install --no-cache-dir pipenv
+# 3. 安装必要的打包工具（如果项目需要编译某些 C 依赖，可以留着，不需要就保持 slim 纯净）
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 
-ADD Pipfile Pipfile.lock /httpbin/
+# 4. 安装 pipenv 并准备工作目录
+RUN pip install --no-cache-dir pipenv
 WORKDIR /httpbin
-RUN /bin/bash -c "pip3 install --no-cache-dir -r <(pipenv lock -r)"
 
-ADD . /httpbin
-RUN pip3 install --no-cache-dir /httpbin
+# 5. 复制依赖文件并利用 pipenv 生成 requirements 导入
+COPY Pipfile Pipfile.lock /httpbin/
+RUN pipenv r > requirements.txt && pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 80
+# 6. 将本地代码复制进去并安装项目本身
+COPY . /httpbin
+RUN pip install --no-cache-dir /httpbin
 
-CMD ["gunicorn", "-b", "0.0.0.0:80", "httpbin:app", "-k", "gevent"]
+# 7. 额外安装一个纯粹的 gunicorn（确保最新且不依赖容易暗碎的 gevent）
+RUN pip install --no-cache-dir gunicorn
+
+# 8. 核心：去掉 -k gevent，并将端口 80 替换为环境变量 $PORT
+CMD ["sh", "-c", "gunicorn -b 0.0.0.0:$PORT httpbin:app"]
